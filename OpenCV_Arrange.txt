@@ -169,46 +169,128 @@
   #均值和方差
   cv.mean cv.meanStdDev->方差越大说明图图像的差异越大
   
+5.tutorial_perspective_transform
+"""
+ROI（region of interest），感兴趣区域。机器视觉、图像处理中，
+从被处理的图像以方框、圆、椭圆、不规则多边形等方式勾勒出需要处理的区域，
+称为感兴趣区域，ROI。在Halcon、OpenCV、Matlab等机器视觉软件上常用到各种算子（Operator）和函数来求得感兴趣区域ROI，
+并进行图像的下一步处理。
+
+ROI 用numpy获取 长宽高等
+
+"""
+
+"""
+泛红填充操作，如何填充一个对象内部的区域
+-FLOODFILL_FIXED_RANGE - 改变图像，泛洪填充
+-FLOODFILL_MASK_ONLY - 不改变图像，只填充遮罩层本身，忽略新的颜色值参数
+
+floodFill(Mat image, Mat mask, Point seedPoint, Scalar newVal)
+
+floodFill(image, mask, seedPoint, newVal, rect, loDiff, upDiff, flags)
+
+src(seed.x,seed.y)-loDiff <= src(x,y) <= src(seed.x,seed.y)+upDiff
+
+"""
+
+"""
+	模糊操作基本原理
+	1.基于离散卷积
+	2.定义好每个卷积核
+	3.不同卷积核得到不同的卷积效果
+	4.模糊是卷积的一种表象
+
+
+	卷积原理
+	一维卷积...卷积边缘...
+
+
+"""
+ROI
+face = src[200:300, 200:400]    #选择200:300行、200:400列区域作为截取对象 作为ROI
+
+gray = cv.cvtColor(face, cv.COLOR_RGB2GRAY)  #生成的的灰度图是单通道图像 把三通道RGB对象转换为单通道灰度对象
+
+backface = cv.cvtColor(gray, cv.COLOR_GRAY2BGR)  #将单通道图像转换为三通道RGB灰度图，因为只有三通道的backface才可以赋给三通道的src
+
+src[200:300, 200:400] = backface #赋值回去
+
+泛洪填充(彩色图像填充)
+mask = np.zeros([h+2, w+2],np.uint8)   #mask必须行和列都加2，且必须为uint8单通道阵列 #为什么要加2可以这么理解：当从0行0列开始泛洪填充扫描时，mask多出来的2可以保证扫描的边界上的像素都会被处理
+
+注意:1.opencv里的mask都是为uin8类型的单通道阵列
+
+泛洪填充(二值图像填充)
+cv.floodFill(image, mask, (200,200), (255 , 0, 0), cv.FLOODFILL_MASK_ONLY) #mask不为0的区域不会被填充，mask为0的区域才会被填充
+
+6.tutorial_fliter&vague
+均值模糊、中值模糊、用户自定义模糊
+
+均值模糊
+    dst = cv.blur(image,(1,15)) # (1，15)是垂直方向模糊 (15,1)是水平方向模糊
+中值模糊->对椒盐噪声有很好的效果
+    dst = cv.medianBlur(image,5)
+用户自定义模糊
+    先定义kernel np.ones([5,5],np.float32)/25 自己定义一个kernel 然后/25是为了防止数值溢出
+    dst = cv.filter2D(image,-1,kernel)
+高斯模糊
+    
+	"""
+	“中间点”取”周围点”的平均值，就会变成1。在数值上，这是一种”平滑化”。在图形上，就相当于产生”模糊”效果，”中间点”失去细节。
+	如果使用简单平均，显然不是很合理，因为图像都是连续的，越靠近的点关系越密切，越远离的点关系越疏远。因此，加权平均更合理，距离越近的点权重越大，距离越远的点权重越小。
+	正态分布显然是一种可取的权重分配模式。
+	计算平均值的时候，我们只需要将”中心点”作为原点，其他点按照其在正态曲线上的位置，分配权重，就可以得到一个加权平均值。
+
+	"""
+    轮廓还在 保留图像的主要特征 高斯模糊比均值模糊去噪效果好 h, w, c = image.shape
+    for row in range(h):
+        for col in range(w):
+            s = np.random.normal(0, 20, 3)
+            b = image[row, col, 0]   #blue
+            g = image[row, col, 1]   #green
+            r = image[row, col, 2]   #red
+            image[row, col, 0] = clamp(b + s[0])
+            image[row, col, 1] = clamp(g + s[1])
+            image[row, col, 2] = clamp(r + s[2])
+
+边缘保留滤波EPF(美颜效果)
+高斯双边滤波
+均值迁移滤波
+    
+    高斯双边滤波
+    dst = cv.bilateralFilter(image,0,100,15)  # 高斯双边 一般把d设置为0 从sigmaColor 和 sigmaSpace 反算出d
+    # double sigmaColor: 颜色空间过滤器的sigma值，这个参数的值月大，表明该像素邻域内有越宽广的颜色会被混合
+    到一起，产生较大的半相等颜色区域。 （这个参数可以理解为值域核的）
+    # double sigmaSpace: 坐标空间中滤波器的sigma值，如果该值较大，则意味着越远的像素将相互影响，从而使更大的
+    区域中足够相似的颜色获取相同的颜色。当d>0时，d指定了邻域大小且与sigmaSpace无关，否则d正比于sigmaSpace.    （ 这个参数可以理解为空间域核的）    
+
+    均值迁移
+    dst = cv.pyrMeanShiftFiltering(image,10,50) # 均值迁移 如果差值很小的话 就漂移 模糊起来 可能造成过度模糊 类似于油画的效果
+
+9.tutorial_histogram
+
+"""    
+图像的直方图是用来表现图像中亮度分布的直方图,给出的是图像中某个亮度或者某个范围亮度下共有几个像素.还不明白?就是统计一幅图某个亮度像素数量.比如对于灰度值12,一幅图里面有2000 个像素其灰度值为12,那么就能够统计12这个亮度的像素为2000个,其他类推。
+"""
+
+    画直方图
+    plt.hist(image.ravel(), 256, [0, 256])         #numpy的ravel函数功能是将多维数组降为一维数组 hist函数主要是计算直方图 256表示指定bin(箱子的个数)也就是竖条的个数 [0,256]表示箱子的上下限 即横坐标显示的范围 范围之外就被舍弃
+    hist = cv.calcHist([image], [i], None, [256], [0, 256])  #计算直方图
+ 
+    直方图的应用
+    直方图应用->直方图均衡化(基于灰度图像的)->调整图片的对比度   分为全局和局部的
+
+    直方图均值化的基本思想是对图像中像素个数多的灰度级进行展宽，而对图像中像素个数少的灰度进行压缩，从而扩展像元取值的动态范围，提高了对比度和灰度色调的变化，使图像更加清晰。
+
+    全局直方图均衡化
+    gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)    #opencv的直方图均衡化要基于单通道灰度图像
+    dst = cv.equalizeHist(gray)                #自动调整图像对比度，把图像变得更清晰 提高图像质量
+    
+    局部直方图均值化
+    gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
+    clahe = cv.createCLAHE(5, (8,8))  # 5表示对比度的大小 (8，8)表示每次处理块的大小
+    dst = clahe.apply(gray)  # 将这种局部直方图均衡化应用到灰度图
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
