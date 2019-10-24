@@ -1,0 +1,47 @@
+-----Checkcode_Recognition-----
+
+"""
+案例实战-数字验证码的识别
+    OpenCV+Tesserct-OCR    Tesserct-OCR是一个库文件
+    OpenCV预处理
+    Tesserct-OCR验证码识别
+
+知识点
+    预处理
+    不同的结构元素中选择
+    Image与numpy array相互转化
+    识别与输出
+"""
+
+import cv2 as cv
+import numpy as np
+import pytesseract as tess  # 安装完Tesserct-OCR后导入pytesseract
+from PIL import Image
+
+def recognize_text():
+    # 首先灰度化
+    gray = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
+    # 其次二值化
+    ret ,binary = cv.threshold(gray,0,255,cv.THRESH_BINARY_INV |cv.THRESH_OTSU) # 加上INV后就变黑色底白色字的了
+    # 然后去除干扰线
+    #1.通过结构元素获取到kernel
+    kernel = cv.getStructuringElement(cv.MORPH_RECT,(4,4))
+    # getStructuringElement 返回执行形状和尺寸的结构元素 最为后来形态学操作的内核 第一个参数表示内核的形状为矩形的 第二个参数表示内核的尺寸
+    #2.进行形态学的开操作
+    bin1 = cv.morphologyEx(binary,cv.MORPPH_OPEN,kernel)
+    cv.imshow("binary_image",bin1)  # 输出开操作(降噪)后的结果
+    
+    cv.bitwise_not(bin1,bin1)  # 将两个图像进行取反的操作 目的是为了变成白色底黑色的字
+    textImage = Image.fromarray(bin1)  # 就是将array数组 变为图片
+    text = tess.image_to_string(textImage)   # 利用这个Tesseract-OCR库将图片转换为字符串输出
+    print("识别结果:%s" % text)
+
+print("-------Hello Python---------")
+src = cv.imread("D:/vcprojects/images/yzm.jpg")
+cv.namedWindow("input image", cv.WINDOW_AUTOSIZE)
+cv.imshow("input image", src)
+recogize_text()
+cv.waitKey(0)
+cv.destroyAllWindows()
+
+
