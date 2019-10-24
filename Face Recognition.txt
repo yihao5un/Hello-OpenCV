@@ -1,0 +1,71 @@
+-----Face Recognition-----
+
+"""
+    人脸检测   
+    HAAR 与 LBP 数据 作为源数据(是一个xml文件)
+    相关API使用
+
+    HAAR github上的项目
+
+"""
+def face_detect_demo(image):
+    # 首先将图片灰度化
+    gray = cv.cvtColor(image,cv.COLOR_BGR2GRAY)
+
+    # 通过级联检测器 检测 这个是 基于 HAAR 的检测  那个 1.02是帧率
+    # face_detector = cv.CascadeClassifier("F:/opencv-master/data/haarcascades/haarcascade_frontalface_alt_tree.xml")  
+   
+    """
+    级联分类器
+    分类器:判别某个事物是否属于某种分类的器件 结果(是 否)
+    级联分类器:将N个单类的分类其串联起来 如果事物属于这一系列串联起来的所有分类器 则最终结果就是 (是) 否则若有一项不符合则为(否)
+    
+    比如说人脸，具有很多的属性 那么只有当某个模型符合人脸的所有属性(即级联)的时候才说明该模型是一个人的脸
+
+    """
+
+    """
+    HAAR特征
+    是反映图像灰度变化的，像素分模块求差值的一种特征    
+    主要是根据灰度不同来判断的(比如眼睛的深度要比脸的深度深 从而区别出来)
+
+    """
+
+    face_detector = cv.CascadeClassifier("F:/opencv-master/data/lbpcascades/lbpcascade_frontalcatface.xml")  # 基于LBP的
+    """
+    LBP特征的描述(用来反映区域的纹理信息的)
+    定义一个(3*3)的窗口 根据中间那个作为阈值 周围8个像素点与之比较 若大于则设为1 否则则设为0 根据这些值产生LBP码 ,即得到该像素殿的LBP值
+
+    """
+
+    faces = face_detector.detectMultiScale(gray,1.02,5)  # 这个1.02表示帧率 5 表示级别 级别越大 对人脸模型的要求就越高
+    # detectMultiScale 可以检测出所有的人脸 并且将人脸用vector保存各个人脸的坐标 大小(用矩形表示)->此函数被分类为器对象调用
+    
+    for x, y, w, h in faces:
+        cv.rectangle(image,(x,y),(x+w,y+h),(0,0,255),2)  # (0,0,255)表示红色的 那个2代表的是类型
+    cv.imshow("result"，image)
+
+
+
+
+    print("-------Hello Python------")
+    # 对于图像来说
+    src = cv.imread("D:/vcprojects/images/CrystalLiu1.jpg")  
+    
+    #对于视频来说
+    cv.namedWindows("result",cv.WINDOW_AUTOSIZE)
+    capture = cv.VideoCapture(0)  #获取到 电脑的摄像头
+    # 写一个while循环
+    wihle true:
+        ret,frame = capture.read()  # 将摄像头读取到内容放到frame里面
+        frame = cv.flip(frame,1)  # 将每一帧都赋值给fram 那个1是为了解决镜面的问题
+        #将得到的每一帧内容都传入到人脸检测的函数参数里面
+        face_detect_demo(frame)
+        c = cv.waitKey(10)
+        if c == 27:  # 27 表示ESC
+            break;
+        
+    cv.waitkey(0)
+    cv.destoryAllWindows()
+    
+
